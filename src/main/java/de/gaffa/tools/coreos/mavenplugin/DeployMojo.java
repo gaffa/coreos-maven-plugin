@@ -1,16 +1,9 @@
 package de.gaffa.tools.coreos.mavenplugin;
 
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import de.gaffa.tools.coreos.mavenplugin.util.ServiceFileBuilder;
+import de.gaffa.tools.coreos.mavenplugin.util.SmokeTester;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -20,10 +13,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Properties;
 
 @Mojo(name = "deploy", defaultPhase = LifecyclePhase.DEPLOY)
 public class DeployMojo extends AbstractMojo {
@@ -45,6 +35,9 @@ public class DeployMojo extends AbstractMojo {
     @Parameter(required = true)
     private String dockerImageName;
 
+    @Parameter
+    private String dockerRunOptions;
+
     @Parameter(defaultValue = "true")
     private Boolean executeSmokeTest;
 
@@ -60,147 +53,44 @@ public class DeployMojo extends AbstractMojo {
         log = getLog();
 
         // generate service file
-        File serviceFile;
+        final File serviceFile;
         try {
-            serviceFile = generateServiceFile();
+            serviceFile = ServiceFileBuilder.build(serviceName, dockerImageName, dockerRunOptions, dockerHubUser, dockerHubPass);
+            log.info("generated service file: " + serviceFile.getPath());
         } catch (IOException e) {
             throw new MojoExecutionException("Exception generating service file");
         }
 
-        final JSch jsch = new JSch();
-
-        // add keyfile
-        try {
-            jsch.addIdentity(keyFile.getPath());
-        } catch (JSchException e) {
-            throw new MojoExecutionException("Something seems to be wrong with your keyfile", e);
-        }
-
-        // configure ssh
-        final Properties config = new Properties();
-        // disable host key checking
-        config.put("StrictHostKeyChecking", "no");
-
-        // init session
-        final Session session;
-        try {
-            session = jsch.getSession(userName, nodeAdress);
-            session.setConfig(config);
-            session.connect();
-        } catch (JSchException e) {
-            throw new MojoExecutionException("Exception while trying to open ssh session to CoreOS node", e);
-        }
+        final CoreOSNode node = new CoreOSNode(nodeAdress, userName, keyFile, log);
 
         try {
             log.info("copying service file to node...");
-            copyFile(session, serviceFile, "/home/core", serviceName + ".service");
+            node.storeFile(serviceFile, "/home/core", serviceName + ".service");
         } catch (SftpException | JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to copy service file to CoreOS-Node", e);
         }
 
         try {
             log.info("pulling docker image...");
-            execute(session, "docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
-            execute(session, "docker pull " + dockerImageName);
+            node.execute("docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
+            node.execute("docker pull " + dockerImageName);
 
             log.info("killing service...");
-            execute(session, "fleetctl stop " + serviceName);
-            execute(session, "fleetctl destroy " + serviceName);
+            node.execute("fleetctl stop " + serviceName);
+            node.execute("fleetctl destroy " + serviceName);
 
             log.info("starting service...");
-            execute(session, "fleetctl start /home/core/" + serviceFile.getName());
-            // TODO: wait for service start, output status
+            node.execute("fleetctl start /home/core/" + serviceFile.getName());
         } catch (JSchException e) {
             throw new MojoExecutionException("Exception while trying to update service", e);
         }
 
-        // close session
-        session.disconnect();
-
         // perform smoke test
         if (executeSmokeTest) {
-            if (!smokeTest()) {
+            final boolean available = SmokeTester.test("http://" + nodeAdress + ":8080/", log);
+            if (!available) {
                 throw new MojoExecutionException("Smoke-Test not successful");
             }
         }
-    }
-
-    // TODO: move to service class and test!
-    private File generateServiceFile() throws IOException {
-
-        File serviceFile = File.createTempFile(serviceName, ".service");
-        log.info("generating service file: " + serviceFile.getPath());
-
-        PrintWriter writer = new PrintWriter(serviceFile, "UTF-8");
-        writer.println("[Unit]");
-        writer.println("Description=" + serviceName + " (File generated by coreos-maven-plugin)");
-        writer.println("After=docker.service");
-        writer.println("Requires=docker.service");
-        writer.println("");
-        writer.println("[Service]");
-        writer.println("TimeoutStartSec=0");
-        writer.println("ExecStartPre=-/usr/bin/docker kill " + serviceName);
-        writer.println("ExecStartPre=-/usr/bin/docker rm " + serviceName);
-        writer.println("ExecStartPre=-/usr/bin/docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
-        writer.println("ExecStartPre=/usr/bin/docker pull " + dockerImageName);
-        // TODO: make ports configurable
-        writer.println("ExecStart=/usr/bin/docker run -p 8080:8080 --name=" + serviceName + " " + dockerImageName);
-        writer.println("ExecStop=/usr/bin/docker stop " + serviceName);
-        writer.println("");
-        writer.println("[Install]");
-        writer.println("WantedBy=multi-user.target");
-        writer.close();
-
-        return serviceFile;
-    }
-
-    // TODO: move to util class
-    private void copyFile(Session session, File file, String targetPath, String targetFileName) throws JSchException, IOException, SftpException {
-
-        ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
-        channel.connect();
-
-        channel.cd(targetPath);
-        channel.put(new FileInputStream(file), targetFileName + ".service");
-        channel.disconnect();
-    }
-
-    private void execute(Session session, String command) throws JSchException {
-
-        ChannelExec channel = (ChannelExec) session.openChannel("exec");
-        channel.setCommand(command);
-        channel.connect();
-    }
-
-    // TODO: test (wiremock?)
-    private boolean smokeTest() {
-
-        final RequestConfig defaultRequestConfig = RequestConfig.custom()
-                .setConnectTimeout(1000)
-                .setConnectionRequestTimeout(1000)
-                .setSocketTimeout(1000)
-                .build();
-
-        final CloseableHttpClient httpClient = HttpClientBuilder.create()
-                .disableAutomaticRetries()
-                .setDefaultRequestConfig(defaultRequestConfig)
-                .build();
-
-        for (int i = 0; i < 60; i++) {
-            try {
-                log.info("trying to connect to deployed service...");
-                final HttpGet get = new HttpGet("http://" + nodeAdress + ":8080/");
-                final CloseableHttpResponse response = httpClient.execute(get);
-                final int statusCode = response.getStatusLine().getStatusCode();
-                if (statusCode == 200) {
-                    return true;
-                }
-                log.info("invalid status code: " + statusCode + " (expecting 200).");
-                Thread.sleep(1000);
-            } catch (IOException | InterruptedException e) {
-                log.warn("problem connecting to service: " + e.getMessage());
-            }
-        }
-        return false;
     }
 }
