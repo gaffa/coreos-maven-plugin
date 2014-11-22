@@ -17,10 +17,10 @@ Usage:
                         <configuration>
                             <keyFile>src/deploy/coreos_rsa</keyFile>
                             <nodeAdress>${aws.host.1}</nodeAdress>
-                            <serviceName>crowdsource</serviceName>
+                            <serviceName>myCoolService</serviceName>
                             <dockerHubUser>someuser</dockerHubUser>
                             <dockerHubPass>somepass</dockerHubPass>
-                            <dockerImageName>asideas/crowdsource</dockerImageName>
+                            <dockerImageName>some/image</dockerImageName>
                             <dockerRunOptions>-p 8080:8080</dockerRunOptions>
                         </configuration>
                     </plugin>
