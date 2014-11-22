@@ -5,3 +5,24 @@ Helps instrumenting CoreOS from maven (instead of shell scripts)
 
 - Creates a Service File
 - Deploys to a CoreOS-Machine with the help of fleetctl
+
+Usage:
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>de.gaffa.tools.coreos</groupId>
+                        <artifactId>coreos-maven-plugin</artifactId>
+                        <version>0.1.25-SNAPSHOT</version>
+                        <configuration>
+                            <keyFile>src/deploy/coreos_rsa</keyFile>
+                            <nodeAdress>${aws.host.1}</nodeAdress>
+                            <serviceName>crowdsource</serviceName>
+                            <dockerHubUser>someuser</dockerHubUser>
+                            <dockerHubPass>somepass</dockerHubPass>
+                            <dockerImageName>asideas/crowdsource</dockerImageName>
+                            <dockerRunOptions>-p 8080:8080</dockerRunOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
