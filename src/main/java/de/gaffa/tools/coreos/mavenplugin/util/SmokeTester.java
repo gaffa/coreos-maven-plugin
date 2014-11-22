@@ -37,6 +37,7 @@ public class SmokeTester {
                 final CloseableHttpResponse response = httpClient.execute(get);
                 final int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == 200) {
+                    log.info("successfully connected to service and got HTTP 200");
                     return true;
                 }
                 log.info("invalid status code: " + statusCode + " (expecting 200).");
@@ -45,6 +46,7 @@ public class SmokeTester {
                 log.warn("problem connecting to service: " + e.getMessage());
             }
         }
+        log.warn("did not get HTTP 200 from service after 60 seconds.");
         return false;
     }
 }
