@@ -71,7 +71,6 @@ public class CoreOSNode {
             // no-op
         }
 
-        // blocks. how does this work? is it necessary at all?
         channel.disconnect();
         session.disconnect();
 
@@ -99,8 +98,6 @@ public class CoreOSNode {
         channel.connect();
         channel.cd(path);
         channel.put(new FileInputStream(file), fileName);
-
-        // log.info(IOUtils.toString(channel.getInputStream()));
 
         channel.disconnect();
         session.disconnect();

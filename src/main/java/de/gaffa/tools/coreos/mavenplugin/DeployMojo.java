@@ -81,6 +81,8 @@ public class DeployMojo extends AbstractMojo {
 
             log.info("starting service...");
             node.execute("fleetctl start /home/core/" + serviceName + ".service");
+
+            // TODO: how to make sure service was started successfully? fleetctl always returns successfully...
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to update service", e);
         }
