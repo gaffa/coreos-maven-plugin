@@ -6,7 +6,6 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
-import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
@@ -14,7 +13,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 /**
@@ -23,21 +21,26 @@ import java.util.Properties;
 public class CoreOSNode {
 
     private final Log log;
+    private final String nodeAddress;
+    private final String userName;
 
-    private final Session session;
+    private JSch jSch = new JSch();
 
-    public CoreOSNode(String nodeAdress, String userName, File keyFile, Log log) throws MojoExecutionException {
+    public CoreOSNode(String nodeAddress, String userName, File keyFile, Log log) throws MojoExecutionException {
 
         this.log = log;
-
-        final JSch jsch = new JSch();
+        this.nodeAddress = nodeAddress;
+        this.userName = userName;
 
         // add keyfile
         try {
-            jsch.addIdentity(keyFile.getPath());
+            jSch.addIdentity(keyFile.getPath());
         } catch (JSchException e) {
             throw new MojoExecutionException("Something seems to be wrong with your keyfile", e);
         }
+    }
+
+    private Session getSession() throws JSchException {
 
         // configure ssh
         final Properties config = new Properties();
@@ -45,13 +48,11 @@ public class CoreOSNode {
         config.put("StrictHostKeyChecking", "no");
 
         // init session
-        try {
-            session = jsch.getSession(userName, nodeAdress);
-            session.setConfig(config);
-            session.connect();
-        } catch (JSchException e) {
-            throw new MojoExecutionException("Exception while trying to open ssh session to CoreOS node", e);
-        }
+        final Session session = jSch.getSession(userName, nodeAddress);
+        session.setConfig(config);
+        session.connect();
+
+        return session;
     }
 
     /**
@@ -60,18 +61,26 @@ public class CoreOSNode {
      */
     public void execute(String command) throws JSchException, IOException {
 
-        ChannelExec executor = (ChannelExec) session.openChannel("exec");
-        executor.setCommand(command);
-        final InputStream extInputStream = executor.getExtInputStream();
-        executor.connect();
-        executor.disconnect();
-        log.info(IOUtils.toString(extInputStream));
-        //  FIXME: why do i always get !=0 eventho everything worked well?
-//        if (executor.getExitStatus() != 0) {
-//            final String message = "error executing command: " + command + ".";
-//            log.error(message);
-//            throw new JSchException(message);
-//        }
+        final Session session = getSession();
+        final ChannelExec channel = (ChannelExec) session.openChannel("exec");
+
+        channel.setCommand(command);
+        channel.connect();
+
+        while (!channel.isClosed()) {
+            // no-op
+        }
+
+        // blocks. how does this work? is it necessary at all?
+        channel.disconnect();
+        session.disconnect();
+
+        final int exitCode = channel.getExitStatus();
+        if (channel.getExitStatus() != 0) {
+            final String message = "error executing command: " + command + ". process exit code: " + exitCode + ".";
+            log.error(message);
+            throw new JSchException(message);
+        }
     }
 
     /**
@@ -84,26 +93,16 @@ public class CoreOSNode {
      */
     public void storeFile(File file, String path, String fileName) throws JSchException, IOException, SftpException {
 
-        ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
+        final Session session = getSession();
+        final ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
 
-        final InputStream extInputStream = channel.getExtInputStream();
         channel.connect();
         channel.cd(path);
         channel.put(new FileInputStream(file), fileName);
-        channel.disconnect();
-        log.info(IOUtils.toString(extInputStream));
-//  FIXME: why do i always get !=0 eventho everything worked well?
-//  if (channel.getExitStatus() != 0) {
-//            final String message = "error storing file: " + fileName + ".";
-//            log.error(message);
-//            throw new JSchException(message);
-//        }
-    }
 
-    /**
-     * Closes the session to the node.
-     */
-    public void close() {
+        // log.info(IOUtils.toString(channel.getInputStream()));
+
+        channel.disconnect();
         session.disconnect();
     }
 }
