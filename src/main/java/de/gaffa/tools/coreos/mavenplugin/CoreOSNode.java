@@ -6,12 +6,15 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
+import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 /**
@@ -55,11 +58,19 @@ public class CoreOSNode {
      * @param command will be executed on the node
      * @throws JSchException
      */
-    public void execute(String command) throws JSchException {
+    public void execute(String command) throws JSchException, IOException {
 
-        ChannelExec channel = (ChannelExec) session.openChannel("exec");
-        channel.setCommand(command);
-        channel.connect();
+        ChannelExec executor = (ChannelExec) session.openChannel("exec");
+        executor.setCommand(command);
+        final InputStream extInputStream = executor.getExtInputStream();
+        executor.connect();
+        executor.disconnect();
+        log.info(IOUtils.toString(extInputStream));
+        if (executor.getExitStatus() != 0) {
+            final String message = "error executing command: " + command + ".";
+            log.error(message);
+            throw new JSchException(message);
+        }
     }
 
     /**
@@ -70,14 +81,21 @@ public class CoreOSNode {
      * @throws FileNotFoundException
      * @throws SftpException
      */
-    public void storeFile(File file, String path, String fileName) throws JSchException, FileNotFoundException, SftpException {
+    public void storeFile(File file, String path, String fileName) throws JSchException, IOException, SftpException {
 
         ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
-        channel.connect();
 
+        final InputStream extInputStream = channel.getExtInputStream();
+        channel.connect();
         channel.cd(path);
         channel.put(new FileInputStream(file), fileName);
         channel.disconnect();
+        log.info(IOUtils.toString(extInputStream));
+        if (channel.getExitStatus() != 0) {
+            final String message = "error storing file: " + fileName + ".";
+            log.error(message);
+            throw new JSchException(message);
+        }
     }
 
     /**

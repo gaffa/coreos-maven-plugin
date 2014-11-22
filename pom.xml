@@ -6,7 +6,7 @@
 
     <groupId>de.gaffa.tools.coreos</groupId>
     <artifactId>coreos-maven-plugin</artifactId>
-    <version>0.1.11-SNAPSHOT</version>
+    <version>0.1.13-SNAPSHOT</version>
 
     <packaging>maven-plugin</packaging>
 
@@ -48,6 +48,11 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.3.6</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
         </dependency>
     </dependencies>
 </project>

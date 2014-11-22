@@ -81,7 +81,7 @@ public class DeployMojo extends AbstractMojo {
 
             log.info("starting service...");
             node.execute("fleetctl start /home/core/" + serviceFile.getName());
-        } catch (JSchException e) {
+        } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to update service", e);
         }
 
@@ -92,5 +92,7 @@ public class DeployMojo extends AbstractMojo {
                 throw new MojoExecutionException("Smoke-Test not successful");
             }
         }
+
+        node.close();
     }
 }
