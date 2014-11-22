@@ -76,7 +76,7 @@ public class CoreOSNode {
         channel.connect();
 
         channel.cd(path);
-        channel.put(new FileInputStream(file), fileName + ".service");
+        channel.put(new FileInputStream(file), fileName);
         channel.disconnect();
     }
 
