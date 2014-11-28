@@ -6,7 +6,7 @@ import java.io.PrintWriter;
 
 public class ServiceFileBuilder {
 
-    public static File build(String serviceName, String dockerImageName, String dockerRunOptions, String dockerHubUser, String dockerHubPass) throws IOException {
+    public static File build(String serviceName, String dockerImageName, String dockerRunOptions, String xFleetOptions, String dockerHubUser, String dockerHubPass) throws IOException {
 
         File serviceFile = File.createTempFile(serviceName, ".service");
 
@@ -27,6 +27,9 @@ public class ServiceFileBuilder {
         writer.println("");
         writer.println("[Install]");
         writer.println("WantedBy=multi-user.target");
+        writer.println();
+        writer.println("[X-Fleet]");
+        writer.println(xFleetOptions);
         writer.close();
 
         return serviceFile;

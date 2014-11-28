@@ -38,6 +38,9 @@ public class DeployMojo extends AbstractMojo {
     @Parameter
     private String dockerRunOptions;
 
+    @Parameter
+    private String xFleetOptions;
+
     @Parameter(defaultValue = "true")
     private Boolean executeSmokeTest;
 
@@ -55,7 +58,7 @@ public class DeployMojo extends AbstractMojo {
         // generate service file
         final File serviceFile;
         try {
-            serviceFile = ServiceFileBuilder.build(serviceName, dockerImageName, dockerRunOptions, dockerHubUser, dockerHubPass);
+            serviceFile = ServiceFileBuilder.build(serviceName, dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass);
             log.info("generated service file: " + serviceFile.getPath());
         } catch (IOException e) {
             throw new MojoExecutionException("Exception generating service file");
