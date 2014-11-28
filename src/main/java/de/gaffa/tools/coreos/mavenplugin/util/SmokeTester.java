@@ -31,6 +31,7 @@ public class SmokeTester {
                 .build();
 
         for (int i = 0; i < 60; i++) {
+            long time = System.currentTimeMillis();
             try {
                 log.info("trying to connect to deployed service...");
                 final HttpGet get = new HttpGet(url);
@@ -45,8 +46,16 @@ public class SmokeTester {
             } catch (IOException | InterruptedException e) {
                 log.warn("problem connecting to service: " + e.getMessage());
             }
+            // wait until a second is over
+            while (System.currentTimeMillis() - time < 1000) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
-        log.warn("did not get HTTP 200 from service after 60 seconds.");
+        log.warn("did not get HTTP 200 from service after 60 attempts.");
         return false;
     }
 }
