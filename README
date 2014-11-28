@@ -26,3 +26,27 @@ Usage:
                     </plugin>
                 </plugins>
             </build>
+
+<repositories>
+    <repository>
+        <id>coreos-maven-plugin</id>
+        <url>https://raw.github.com/gaffa/coreos-maven-plugin/mvn-repo/</url>
+        <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+        </snapshots>
+    </repository>
+</repositories>
+
+To be able to deploy to github, you need to have your email in "Email (will be public)" in https://github.com/settings/profile.
+Also put you credentials in your settings.xml
+
+<settings>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>YOUR-USERNAME</username>
+      <password>YOUR-PASSWORD</password>
+    </server>
+  </servers>
+</settings>
