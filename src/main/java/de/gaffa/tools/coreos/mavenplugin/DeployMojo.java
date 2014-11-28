@@ -89,7 +89,7 @@ public class DeployMojo extends AbstractMojo {
 
         // perform smoke test
         if (executeSmokeTest) {
-            final boolean available = SmokeTester.test("http://" + nodeAdress + ":8080/", log);
+            final boolean available = SmokeTester.test("http://" + nodeAdress, log);
             if (!available) {
                 throw new MojoExecutionException("Smoke-Test not successful");
             }
