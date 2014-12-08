@@ -1,14 +1,20 @@
 package de.gaffa.tools.coreos.mavenplugin.util;
 
+import com.google.common.io.Files;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.maven.plugin.MojoExecutionException;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServiceFileBuilder {
 
-    public static File build(String serviceName, String dockerImageName, String dockerRunOptions, String xFleetOptions, String dockerHubUser, String dockerHubPass) throws IOException {
+    private static File buildServiceFile(File baseDir, int serviceIndex, String serviceName, String dockerImageName, String dockerRunOptions, String xFleetOptions, String dockerHubUser, String dockerHubPass) throws IOException {
 
-        File serviceFile = File.createTempFile(serviceName, ".service");
+        File serviceFile = new File(baseDir.getAbsolutePath() + File.separator + serviceName + "." + serviceIndex + ".service");
 
         PrintWriter writer = new PrintWriter(serviceFile, "UTF-8");
         writer.println("[Unit]");
@@ -29,9 +35,28 @@ public class ServiceFileBuilder {
         writer.println("WantedBy=multi-user.target");
         writer.println();
         writer.println("[X-Fleet]");
-        writer.println(xFleetOptions);
+        // custom x-fleet options (eg an explicit host to deploy to, deploy to all hosts)
+        if (!StringUtils.isBlank(xFleetOptions)) {
+            writer.println(xFleetOptions);
+        }
+        // never run two instances of the service on the same host
+        writer.println("Conflicts=" + serviceName + ".*.service");
         writer.close();
 
         return serviceFile;
+    }
+
+    public static List<File> build(int instances, String serviceName, String dockerImageName, String dockerRunOptions, String xFleetOptions, String dockerHubUser, String dockerHubPass) throws MojoExecutionException {
+
+        File baseDir = Files.createTempDir();
+        List<File> serviceFiles = new ArrayList<>();
+        for (int i = 0; i < instances; i++) {
+            try {
+                serviceFiles.add(buildServiceFile(baseDir, i + 1, serviceName, dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass));
+            } catch (IOException e) {
+                throw new MojoExecutionException("Exception generating service file", e);
+            }
+        }
+        return serviceFiles;
     }
 }

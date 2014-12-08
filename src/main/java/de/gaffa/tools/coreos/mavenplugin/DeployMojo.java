@@ -14,6 +14,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 @Mojo(name = "deploy", defaultPhase = LifecyclePhase.DEPLOY)
 public class DeployMojo extends AbstractMojo {
@@ -31,6 +32,9 @@ public class DeployMojo extends AbstractMojo {
 
     @Parameter(required = true)
     private String serviceName;
+
+    @Parameter(defaultValue = "1")
+    private int instances;
 
     @Parameter(required = true)
     private String dockerImageName;
@@ -56,19 +60,18 @@ public class DeployMojo extends AbstractMojo {
         log = getLog();
 
         // generate service file
-        final File serviceFile;
-        try {
-            serviceFile = ServiceFileBuilder.build(serviceName, dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass);
-            log.info("generated service file: " + serviceFile.getPath());
-        } catch (IOException e) {
-            throw new MojoExecutionException("Exception generating service file");
-        }
+        final List<File> serviceFiles = ServiceFileBuilder.build(instances, serviceName, dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass);
 
         final CoreOSNode node = new CoreOSNode(nodeAdress, userName, keyFile, log);
 
         try {
-            log.info("copying service file to node...");
-            node.storeFile(serviceFile, "/home/core", serviceName + ".service");
+            log.info("copying service files to node...");
+            // FIXME what if we decrease the amount of services (instances-param)? do we suffer from leftover service files?
+            // before deleting them: think about that you still need to stop/destroy those service
+            // maybe we need to work on different folders or something?
+            for (File serviceFile : serviceFiles) {
+                node.storeFile(serviceFile, "/home/core", serviceFile.getName());
+            }
         } catch (SftpException | JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to copy service file to CoreOS-Node", e);
         }
@@ -78,14 +81,18 @@ public class DeployMojo extends AbstractMojo {
             node.execute("docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
             node.execute("docker pull " + dockerImageName);
 
-            log.info("killing service...");
-            node.execute("fleetctl stop " + serviceName);
-            node.execute("fleetctl destroy " + serviceName);
-
-            log.info("starting service...");
-            node.execute("fleetctl start /home/core/" + serviceName + ".service");
+            // FIXME kill all service instances but the amount that was defined in 'minInstancesDuringUpdate'
+            // this is a bug. it takes the configured 'instances' instead of the actual running instances
+            for (int i = 0; i < instances; i++) {
+                log.info("killing service " + i + "...");
+                node.execute("fleetctl stop " + serviceName + "." + i + 1 + ".service");
+                node.execute("fleetctl destroy " + serviceName + "." + i + 1 + ".service");
+                log.info("starting service " + i + "...");
+                node.execute("fleetctl start /home/core/" + serviceName + ".service");
+            }
 
             // TODO: how to make sure service was started successfully? fleetctl always returns successfully...
+
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to update service", e);
         }
