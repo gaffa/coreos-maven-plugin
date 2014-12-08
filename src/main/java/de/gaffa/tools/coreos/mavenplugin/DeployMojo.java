@@ -81,8 +81,8 @@ public class DeployMojo extends AbstractMojo {
             node.execute("docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
             node.execute("docker pull " + dockerImageName);
 
-            // FIXME kill all service instances but the amount that was defined in 'minInstancesDuringUpdate'
-            // this is a bug. it takes the configured 'instances' instead of the actual running instances
+            // FIXME dumb behaviour. takes the configured 'instances' instead of the actual running instances
+            // FIXME should kill services will old service files and start with new, should it not?
             for (int i = 0; i < instances; i++) {
                 log.info("killing service " + i + "...");
                 node.execute("fleetctl stop " + serviceName + "." + i + 1 + ".service");
@@ -91,7 +91,7 @@ public class DeployMojo extends AbstractMojo {
                 node.execute("fleetctl start /home/core/" + serviceName + ".service");
             }
 
-            // TODO: how to make sure service was started successfully? fleetctl always returns successfully...
+            // TODO: make sure service was started successfully? fleetctl always returns successfully...
 
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to update service", e);
@@ -99,6 +99,7 @@ public class DeployMojo extends AbstractMojo {
 
         // perform smoke test
         if (executeSmokeTest) {
+            // TODO: should that be per host? is that possible at all?
             final boolean available = SmokeTester.test("http://" + nodeAdress, log);
             if (!available) {
                 throw new MojoExecutionException("Smoke-Test not successful");
