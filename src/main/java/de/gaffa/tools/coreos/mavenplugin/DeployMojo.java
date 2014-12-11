@@ -4,7 +4,6 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import de.gaffa.tools.coreos.mavenplugin.util.ServiceFileBuilder;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.monitor.logging.DefaultLog;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -12,7 +11,6 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.codehaus.plexus.logging.console.ConsoleLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,22 +55,6 @@ public class DeployMojo extends AbstractMojo {
 
     @Parameter(required = true)
     private String dockerHubPass;
-
-    public static void main(String[] args) throws MojoFailureException, MojoExecutionException {
-
-        DeployMojo deployMojo = new DeployMojo();
-        deployMojo.nodeAdress = "54.194.152.80";
-        deployMojo.userName = "core";
-        deployMojo.serviceName = "crowdsource";
-        deployMojo.keyFile = new File(DeployMojo.class.getResource("/coreos_rsa").getFile());
-        deployMojo.log = new DefaultLog(new ConsoleLogger());
-        deployMojo.instances = 2;
-        deployMojo.dockerHubUser = "asjenkins";
-        deployMojo.dockerHubPass = "ideas987";
-        deployMojo.dockerImageName = "asideas/crowdsource";
-        deployMojo.dockerRunOptions = "-p 80:8080 -e \"SPRING_PROFILES_ACTIVE=prod\"";
-        deployMojo.execute();
-    }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
