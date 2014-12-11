@@ -67,31 +67,12 @@ public class DeployMojo extends AbstractMojo {
         // generate service files
         final List<File> newServiceFiles = ServiceFileBuilder.build(instances, serviceName, dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass);
 
-        String serviceFileRoot = "/home/core/services/" + serviceName + "/";
-        // FIXME: saving the old service files does not seem to be necessary as fleetctl stop/destroy does not ask for a path
-        // maybe its better to fleetctl list-units and then destroy the actual running services instead of the services that are represented in files
-        String oldServiceFileFolder = serviceFileRoot + "trash/";
-        String newServiceFileFolder = serviceFileRoot + "current/";
-
-        // old service files
-        final List<String> oldServiceFileNames;
-        // move current service files to "trash" directory and list them
+        String serviceFileFolder = "/home/core/services/" + serviceName + "/";
         try {
-            log.info("clearing service trash folder and moving current service files");
+            log.info("clearing service folder");
             // make sure the folders exist
-            node.execute("mkdir -p " + oldServiceFileFolder);
-            node.execute("mkdir -p " + newServiceFileFolder);
-            // move current files to trash
-            node.execute("rm -rf " + oldServiceFileFolder + "*");
-            if (!StringUtils.isBlank(node.execute("ls " + newServiceFileFolder))) {
-                node.execute("mv " + newServiceFileFolder + "* " + oldServiceFileFolder);
-            }
-            // list current files (to be able to kill them later)
-            if (!StringUtils.isBlank(node.execute("ls " + oldServiceFileFolder))) {
-                oldServiceFileNames = Arrays.asList(node.execute("ls " + oldServiceFileFolder).split("\n"));
-            } else {
-                oldServiceFileNames = new ArrayList<>();
-            }
+            node.execute("mkdir -p " + serviceFileFolder);
+            node.execute("rm -rf " + serviceFileFolder + "*");
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception clearing service trash folder and moving service files", e);
         }
@@ -100,7 +81,7 @@ public class DeployMojo extends AbstractMojo {
         try {
             log.info("copying service files to node...");
             for (File serviceFile : newServiceFiles) {
-                node.storeFile(serviceFile, newServiceFileFolder, serviceFile.getName());
+                node.storeFile(serviceFile, serviceFileFolder, serviceFile.getName());
             }
         } catch (SftpException | JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to copy service file to CoreOS-Node", e);
@@ -114,7 +95,9 @@ public class DeployMojo extends AbstractMojo {
             throw new MojoExecutionException("Exception while trying to pull docker image", e);
         }
 
-        int numOldServices = oldServiceFileNames.size();
+        final List<String> oldServices = getOldServiceNames(node);
+
+        int numOldServices = oldServices.size();
         int numNewServices = newServiceFiles.size();
 
         int maxCountServices = Integer.max(numOldServices, numNewServices);
@@ -122,11 +105,11 @@ public class DeployMojo extends AbstractMojo {
         for (int i = 0; i < maxCountServices; i++) {
 
             if (numOldServices >= i) {
-                killService(node, oldServiceFileNames.get(i));
+                killService(node, oldServices.get(i));
             }
 
             if (numNewServices >= i) {
-                startService(node, newServiceFileFolder, newServiceFiles.get(i).getName());
+                startService(node, serviceFileFolder, newServiceFiles.get(i).getName());
             }
         }
 
@@ -142,6 +125,18 @@ public class DeployMojo extends AbstractMojo {
 //        }
     }
 
+    private List<String> getOldServiceNames(CoreOSNode node) throws MojoExecutionException {
+
+        final String listUnitsOuput;
+        try {
+            listUnitsOuput = node.execute("fleetctl list-units | grep " + serviceName + " | awk '{print $1}''");
+        } catch (JSchException | IOException e) {
+            throw new MojoExecutionException("Exception listing old units");
+        }
+
+        return Arrays.asList(listUnitsOuput.split("\\n"));
+    }
+
     private void startService(CoreOSNode node, String serviceFolder, String serviceName) throws MojoExecutionException {
 
         log.info("starting service " + serviceName + "...");
@@ -150,6 +145,8 @@ public class DeployMojo extends AbstractMojo {
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception starting service", e);
         }
+
+        // TODO wait until the service is actually started as fleetctl start returns quickly, the webapp takes some time to be available
     }
 
     private void killService(CoreOSNode node, String serviceName) throws MojoExecutionException {
