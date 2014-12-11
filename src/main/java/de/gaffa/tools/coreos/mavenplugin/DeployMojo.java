@@ -16,6 +16,7 @@ import org.codehaus.plexus.logging.console.ConsoleLogger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,10 +63,14 @@ public class DeployMojo extends AbstractMojo {
         DeployMojo deployMojo = new DeployMojo();
         deployMojo.nodeAdress = "54.194.152.80";
         deployMojo.userName = "core";
-        deployMojo.serviceName = "test";
+        deployMojo.serviceName = "crowdsource";
         deployMojo.keyFile = new File(DeployMojo.class.getResource("/coreos_rsa").getFile());
         deployMojo.log = new DefaultLog(new ConsoleLogger());
-        deployMojo.instances = 5;
+        deployMojo.instances = 2;
+        deployMojo.dockerHubUser = "asjenkins";
+        deployMojo.dockerHubPass = "ideas987";
+        deployMojo.dockerImageName = "asideas/crowdsource";
+        deployMojo.dockerRunOptions = "-p 80:8080 -e \"SPRING_PROFILES_ACTIVE=prod\"";
         deployMojo.execute();
     }
 
@@ -101,6 +106,8 @@ public class DeployMojo extends AbstractMojo {
             // list current files (to be able to kill them later)
             if (!StringUtils.isBlank(node.execute("ls " + oldServiceFileFolder))) {
                 oldServiceFileNames = Arrays.asList(node.execute("ls " + oldServiceFileFolder).split("\n"));
+            } else {
+                oldServiceFileNames = new ArrayList<>();
             }
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception clearing service trash folder and moving service files", e);
@@ -116,36 +123,60 @@ public class DeployMojo extends AbstractMojo {
             throw new MojoExecutionException("Exception while trying to copy service file to CoreOS-Node", e);
         }
 
+        try {
+            log.info("pulling docker image...");
+            node.execute("docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
+            node.execute("docker pull " + dockerImageName);
+        } catch (JSchException | IOException e) {
+            throw new MojoExecutionException("Exception while trying to pull docker image", e);
+        }
 
-//
-//        try {
-//            log.info("pulling docker image...");
-//            node.execute("docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
-//            node.execute("docker pull " + dockerImageName);
-//
-//            // FIXME dumb behaviour. takes the configured 'instances' instead of the actual running instances
-//            // FIXME should kill services will old service files and start with new, should it not?
-//            for (int i = 0; i < instances; i++) {
-//                log.info("killing service " + i + "...");
-//                node.execute("fleetctl stop " + serviceName + "." + i + 1 + ".service");
-//                node.execute("fleetctl destroy " + serviceName + "." + i + 1 + ".service");
-//                log.info("starting service " + i + "...");
-//                node.execute("fleetctl start /home/core/" + serviceName + ".service");
-//            }
-//
-//            // TODO: make sure service was started successfully? fleetctl always returns successfully...
-//
-//        } catch (JSchException | IOException e) {
-//            throw new MojoExecutionException("Exception while trying to update service", e);
-//        }
-//
-//        // perform smoke test
-//        if (executeSmokeTest) {
-//            // TODO: should that be per host? is that possible at all?
-//            final boolean available = SmokeTester.test("http://" + nodeAdress, log);
-//            if (!available) {
-//                throw new MojoExecutionException("Smoke-Test not successful");
+        int numOldServices = oldServiceFileNames.size();
+        int numNewServices = newServiceFiles.size();
+
+        int maxCountServices = Integer.max(numOldServices, numNewServices);
+
+        for (int i = 0; i < maxCountServices; i++) {
+
+            if (numOldServices >= i) {
+                killService(node, oldServiceFileNames.get(i));
+            }
+
+            if (numNewServices >= i) {
+                startService(node, newServiceFileFolder, newServiceFiles.get(i).getName());
+            }
+        }
+
+        // FIXME perform smoke test (is there a sane way to do so? how to get the external ips?)
+//        {
+//            if (executeSmokeTest) {
+//                // TODO: should that be per host? is that possible at all?
+//                final boolean available = SmokeTester.test("http://" + nodeAdress, log);
+//                if (!available) {
+//                    throw new MojoExecutionException("Smoke-Test not successful");
+//                }
 //            }
 //        }
+    }
+
+    private void startService(CoreOSNode node, String serviceFolder, String serviceName) throws MojoExecutionException {
+
+        log.info("starting service " + serviceName + "...");
+        try {
+            node.execute("fleetctl start " + serviceFolder + serviceName);
+        } catch (JSchException | IOException e) {
+            throw new MojoExecutionException("Exception starting service", e);
+        }
+    }
+
+    private void killService(CoreOSNode node, String serviceName) throws MojoExecutionException {
+
+        log.info("killing service " + serviceName + "...");
+        try {
+            node.execute("fleetctl stop " + serviceName);
+            node.execute("fleetctl destroy " + serviceName);
+        } catch (JSchException | IOException e) {
+            throw new MojoExecutionException("Exception killing service", e);
+        }
     }
 }
