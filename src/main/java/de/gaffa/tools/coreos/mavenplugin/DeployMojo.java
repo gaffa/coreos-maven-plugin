@@ -67,14 +67,15 @@ public class DeployMojo extends AbstractMojo {
         // generate service files
         final List<File> newServiceFiles = ServiceFileBuilder.build(instances, serviceName, dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass);
 
-        // old service files
-        final List<String> oldServiceFileNames;
-
-        // move current service files to "trash" directory and list them
         String serviceFileRoot = "/home/core/services/" + serviceName + "/";
+        // FIXME: saving the old service files does not seem to be necessary as fleetctl stop/destroy does not ask for a path
+        // maybe its better to fleetctl list-units and then destroy the actual running services instead of the services that are represented in files
         String oldServiceFileFolder = serviceFileRoot + "trash/";
         String newServiceFileFolder = serviceFileRoot + "current/";
 
+        // old service files
+        final List<String> oldServiceFileNames;
+        // move current service files to "trash" directory and list them
         try {
             log.info("clearing service trash folder and moving current service files");
             // make sure the folders exist
