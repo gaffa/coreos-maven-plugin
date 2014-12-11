@@ -6,7 +6,7 @@
 
     <groupId>de.gaffa.tools.coreos</groupId>
     <artifactId>coreos-maven-plugin</artifactId>
-    <version>0.1.29-SNAPSHOT</version>
+    <version>0.1.30-SNAPSHOT</version>
 
     <packaging>maven-plugin</packaging>
 
@@ -75,6 +75,11 @@
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.3.2</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
