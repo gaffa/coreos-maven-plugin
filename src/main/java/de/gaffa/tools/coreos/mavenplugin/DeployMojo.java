@@ -174,6 +174,7 @@ public class DeployMojo extends AbstractMojo {
 
         final String listUnitsOuput;
         try {
+            log.info("listing fleet units...");
             // TODO: This lists all units, even if they are not running
             listUnitsOuput = node.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service' | awk '{print $1}'");
         } catch (JSchException | IOException e) {
@@ -182,7 +183,10 @@ public class DeployMojo extends AbstractMojo {
 
         final List<ServiceName> serviceNames = new ArrayList<>();
         for (String serviceFilename : listUnitsOuput.split("\\n")) {
-            serviceNames.add(ServiceName.fromFullName(serviceFilename));
+
+            if (!serviceFilename.isEmpty()) {
+                serviceNames.add(ServiceName.fromFullName(serviceFilename));
+            }
         }
 
         return serviceNames;
