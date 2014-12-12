@@ -6,6 +6,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
+import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -108,5 +109,28 @@ public class CoreOSNode {
 
         channel.disconnect();
         session.disconnect();
+    }
+
+    public void startService(String serviceFolder, String serviceFilename) throws MojoExecutionException {
+
+        log.info("starting service " + serviceFilename + "...");
+        try {
+            execute("fleetctl start " + serviceFolder + serviceFilename);
+        } catch (JSchException | IOException e) {
+            throw new MojoExecutionException("Exception starting service", e);
+        }
+
+        // TODO wait until the service is actually started as fleetctl start returns quickly, the webapp takes some time to be available
+    }
+
+    public void killService(CoreOsUnit coreOsUnit) throws MojoExecutionException {
+
+        log.info("killing service " + coreOsUnit.getFullName() + "...");
+        try {
+            execute("fleetctl stop " + coreOsUnit.getFullName());
+            execute("fleetctl destroy " + coreOsUnit.getFullName());
+        } catch (JSchException | IOException e) {
+            throw new MojoExecutionException("Exception killing service", e);
+        }
     }
 }

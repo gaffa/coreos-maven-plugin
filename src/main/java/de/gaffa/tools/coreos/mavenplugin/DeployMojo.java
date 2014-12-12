@@ -118,7 +118,7 @@ public class DeployMojo extends AbstractMojo {
             int diff = numNewServices - numOldServices;
 
             for (int i = 0; i < diff; i++) {
-                startService(node, serviceFileFolder, newServiceFiles.get(i).getName());
+                node.startService(serviceFileFolder, newServiceFiles.get(i).getName());
             }
         } else if (numNewServices < numOldServices) {
 
@@ -126,7 +126,7 @@ public class DeployMojo extends AbstractMojo {
 
             // remove the highest index first, and the lowest last
             for (int i = numOldServices - 1; i >= diff; i--) {
-                killService(node, oldServices.get(i));
+                node.killService(oldServices.get(i));
             }
         }
     }
@@ -141,11 +141,11 @@ public class DeployMojo extends AbstractMojo {
         for (int i = 0; i < maxCountServices; i++) {
 
             if (numOldServices > i) {
-                killService(node, oldServices.get(i));
+                node.killService(oldServices.get(i));
             }
 
             if (numNewServices > i) {
-                startService(node, serviceFileFolder, newServiceFiles.get(i).getName());
+                node.startService(serviceFileFolder, newServiceFiles.get(i).getName());
             }
         }
     }
@@ -194,28 +194,5 @@ public class DeployMojo extends AbstractMojo {
         }
 
         return coreOsUnits;
-    }
-
-    void startService(CoreOSNode node, String serviceFolder, String serviceFilename) throws MojoExecutionException {
-
-        log.info("starting service " + serviceFilename + "...");
-        try {
-            node.execute("fleetctl start " + serviceFolder + serviceFilename);
-        } catch (JSchException | IOException e) {
-            throw new MojoExecutionException("Exception starting service", e);
-        }
-
-        // TODO wait until the service is actually started as fleetctl start returns quickly, the webapp takes some time to be available
-    }
-
-    void killService(CoreOSNode node, CoreOsUnit coreOsUnit) throws MojoExecutionException {
-
-        log.info("killing service " + coreOsUnit.getFullName() + "...");
-        try {
-            node.execute("fleetctl stop " + coreOsUnit.getFullName());
-            node.execute("fleetctl destroy " + coreOsUnit.getFullName());
-        } catch (JSchException | IOException e) {
-            throw new MojoExecutionException("Exception killing service", e);
-        }
     }
 }
