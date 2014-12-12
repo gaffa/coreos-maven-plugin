@@ -3,14 +3,10 @@
   <groupId>de.gaffa.tools.coreos</groupId>
   <artifactId>coreos-maven-plugin</artifactId>
   <versioning>
-    <latest>0.1.38-SNAPSHOT</latest>
+    <latest>0.1.39-SNAPSHOT</latest>
     <versions>
-      <version>0.1.34-SNAPSHOT</version>
-      <version>0.1.35-SNAPSHOT</version>
-      <version>0.1.36-SNAPSHOT</version>
-      <version>0.1.37-SNAPSHOT</version>
-      <version>0.1.38-SNAPSHOT</version>
+      <version>0.1.39-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20141212132704</lastUpdated>
+    <lastUpdated>20141212205100</lastUpdated>
   </versioning>
 </metadata>
