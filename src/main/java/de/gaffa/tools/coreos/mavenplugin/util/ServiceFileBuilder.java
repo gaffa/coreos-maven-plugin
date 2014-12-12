@@ -27,7 +27,9 @@ public class ServiceFileBuilder {
         writer.println("TimeoutStartSec=0");
         writer.println("ExecStartPre=-/usr/bin/docker kill " + serviceName.getName());
         writer.println("ExecStartPre=-/usr/bin/docker rm " + serviceName.getName());
-        writer.println("ExecStartPre=-/usr/bin/docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
+        if (!StringUtils.isBlank(dockerHubUser) && !StringUtils.isBlank(dockerHubPass)) {
+            writer.println("ExecStartPre=-/usr/bin/docker login -e coreos@maven.org -u " + dockerHubUser + " -p " + dockerHubPass);
+        }
         writer.println("ExecStartPre=/usr/bin/docker pull " + dockerImageName);
         writer.println("ExecStart=/usr/bin/docker run " + dockerRunOptions + " --name=" + serviceName.getName() + " " + dockerImageName);
         writer.println("ExecStop=/usr/bin/docker stop " + serviceName.getName());

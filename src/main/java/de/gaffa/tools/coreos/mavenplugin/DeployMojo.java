@@ -50,10 +50,10 @@ public class DeployMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private Boolean executeSmokeTest;
 
-    @Parameter(required = true)
+    @Parameter
     private String dockerHubUser;
 
-    @Parameter(required = true)
+    @Parameter
     private String dockerHubPass;
 
     @Parameter(defaultValue = "latest")
@@ -84,8 +84,7 @@ public class DeployMojo extends AbstractMojo {
 
         if (ensure == Ensure.RUNNING) {
             ensureRunning(node, serviceFileFolder, newServiceFiles, oldServices);
-        }
-        else {
+        } else {
             ensureLatest(node, serviceFileFolder, newServiceFiles, oldServices);
         }
 
@@ -118,8 +117,7 @@ public class DeployMojo extends AbstractMojo {
             for (int i = 0; i < diff; i++) {
                 startService(node, serviceFileFolder, newServiceFiles.get(i).getName());
             }
-        }
-        else if (numNewServices > numOldServices) {
+        } else if (numNewServices > numOldServices) {
             int diff = numNewServices - numOldServices;
 
             // remove the highest index first, and the lowest last
