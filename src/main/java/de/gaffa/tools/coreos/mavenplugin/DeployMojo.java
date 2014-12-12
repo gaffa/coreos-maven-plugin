@@ -3,7 +3,7 @@ package de.gaffa.tools.coreos.mavenplugin;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import de.gaffa.tools.coreos.mavenplugin.type.Ensure;
-import de.gaffa.tools.coreos.mavenplugin.type.ServiceName;
+import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
 import de.gaffa.tools.coreos.mavenplugin.util.ServiceFileBuilder;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -67,7 +67,7 @@ public class DeployMojo extends AbstractMojo {
         // coreos-node we are operating on
         final CoreOSNode node = new CoreOSNode(nodeAdress, userName, keyFile, log);
 
-        final List<ServiceName> oldServices = listUnits(node);
+        final List<CoreOsUnit> oldServices = listUnits(node);
 
         if (ensure == Ensure.RUNNING && instances == oldServices.size()) {
             log.info("The right number of instances is already running. Nothing to do");
@@ -100,7 +100,7 @@ public class DeployMojo extends AbstractMojo {
 //        }
     }
 
-    private void ensureRunning(CoreOSNode node, String serviceFileFolder, List<File> newServiceFiles, List<ServiceName> oldServices) throws MojoExecutionException {
+    private void ensureRunning(CoreOSNode node, String serviceFileFolder, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
 
         int numOldServices = oldServices.size();
         int numNewServices = newServiceFiles.size();
@@ -129,7 +129,7 @@ public class DeployMojo extends AbstractMojo {
         }
     }
 
-    private void ensureLatest(CoreOSNode node, String serviceFileFolder, List<File> newServiceFiles, List<ServiceName> oldServices) throws MojoExecutionException {
+    private void ensureLatest(CoreOSNode node, String serviceFileFolder, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
 
         int numOldServices = oldServices.size();
         int numNewServices = newServiceFiles.size();
@@ -172,26 +172,26 @@ public class DeployMojo extends AbstractMojo {
         }
     }
 
-    private List<ServiceName> listUnits(CoreOSNode node) throws MojoExecutionException {
+    private List<CoreOsUnit> listUnits(CoreOSNode node) throws MojoExecutionException {
 
         final String listUnitsOuput;
         try {
             log.info("listing fleet units...");
             // TODO: This lists all units, even if they are not running
-            listUnitsOuput = node.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service' | awk '{print $1}'");
+            listUnitsOuput = node.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service'");
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception listing old units");
         }
 
-        final List<ServiceName> serviceNames = new ArrayList<>();
-        for (String serviceFilename : listUnitsOuput.split("\\n")) {
+        final List<CoreOsUnit> coreOsUnits = new ArrayList<>();
+        for (String listUnitsLine : listUnitsOuput.split("\\n")) {
 
-            if (!serviceFilename.isEmpty()) {
-                serviceNames.add(ServiceName.fromFullName(serviceFilename));
+            if (!listUnitsLine.isEmpty()) {
+                coreOsUnits.add(CoreOsUnit.fromFleetListUnitsLine(listUnitsLine));
             }
         }
 
-        return serviceNames;
+        return coreOsUnits;
     }
 
     private void startService(CoreOSNode node, String serviceFolder, String serviceFilename) throws MojoExecutionException {
@@ -206,12 +206,12 @@ public class DeployMojo extends AbstractMojo {
         // TODO wait until the service is actually started as fleetctl start returns quickly, the webapp takes some time to be available
     }
 
-    private void killService(CoreOSNode node, ServiceName serviceName) throws MojoExecutionException {
+    private void killService(CoreOSNode node, CoreOsUnit coreOsUnit) throws MojoExecutionException {
 
-        log.info("killing service " + serviceName.getFullName() + "...");
+        log.info("killing service " + coreOsUnit.getFullName() + "...");
         try {
-            node.execute("fleetctl stop " + serviceName.getFullName());
-            node.execute("fleetctl destroy " + serviceName.getFullName());
+            node.execute("fleetctl stop " + coreOsUnit.getFullName());
+            node.execute("fleetctl destroy " + coreOsUnit.getFullName());
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception killing service", e);
         }
