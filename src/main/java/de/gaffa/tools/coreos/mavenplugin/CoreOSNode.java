@@ -62,7 +62,7 @@ public class CoreOSNode {
             // TODO: This lists all units, even if they are not running
             listUnitsOuput = remoteHost.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service'");
         } catch (JSchException | IOException e) {
-            throw new MojoExecutionException("Exception listing old units");
+            throw new MojoExecutionException("Exception listing old units", e);
         }
 
         final List<CoreOsUnit> coreOsUnits = new ArrayList<>();

@@ -63,6 +63,22 @@ public class DeployMojoTest extends TestCase {
         verify(node, times(0)).startService(anyString(), anyString());
     }
 
+    @Test
+    public void testEnsureRunningNoneCurrentlyRunning() throws Exception {
+
+        deployMojo.ensureRunning(node, "some/folder", fileList(2), serviceList(0));
+        verify(node, times(0)).killService(any(CoreOsUnit.class));
+        verify(node, times(2)).startService(anyString(), anyString());
+    }
+
+    @Test
+    public void testEnsureRunningNoneShouldBeRunning() throws Exception {
+
+        deployMojo.ensureRunning(node, "some/folder", fileList(0), serviceList(5));
+        verify(node, times(5)).killService(any(CoreOsUnit.class));
+        verify(node, times(0)).startService(anyString(), anyString());
+    }
+
     private List<CoreOsUnit> serviceList(int num) {
 
         List<CoreOsUnit> services = new ArrayList<>();
