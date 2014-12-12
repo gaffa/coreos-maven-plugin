@@ -2,8 +2,8 @@ package de.gaffa.tools.coreos.mavenplugin;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
-import de.gaffa.tools.coreos.mavenplugin.type.Ensure;
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
+import de.gaffa.tools.coreos.mavenplugin.type.Ensure;
 import de.gaffa.tools.coreos.mavenplugin.util.ServiceFileBuilder;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -100,7 +100,7 @@ public class DeployMojo extends AbstractMojo {
 //        }
     }
 
-    private void ensureRunning(CoreOSNode node, String serviceFileFolder, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
+    void ensureRunning(CoreOSNode node, String serviceFileFolder, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
 
         int numOldServices = oldServices.size();
         int numNewServices = newServiceFiles.size();
@@ -114,12 +114,14 @@ public class DeployMojo extends AbstractMojo {
         log.info("Ensuring that there will be " + numNewServices + " running (current: " + numOldServices + ")");
 
         if (numNewServices > numOldServices) {
+
             int diff = numNewServices - numOldServices;
 
             for (int i = 0; i < diff; i++) {
                 startService(node, serviceFileFolder, newServiceFiles.get(i).getName());
             }
         } else if (numNewServices < numOldServices) {
+
             int diff = numOldServices - numNewServices;
 
             // remove the highest index first, and the lowest last
@@ -194,7 +196,7 @@ public class DeployMojo extends AbstractMojo {
         return coreOsUnits;
     }
 
-    private void startService(CoreOSNode node, String serviceFolder, String serviceFilename) throws MojoExecutionException {
+    void startService(CoreOSNode node, String serviceFolder, String serviceFilename) throws MojoExecutionException {
 
         log.info("starting service " + serviceFilename + "...");
         try {
@@ -206,7 +208,7 @@ public class DeployMojo extends AbstractMojo {
         // TODO wait until the service is actually started as fleetctl start returns quickly, the webapp takes some time to be available
     }
 
-    private void killService(CoreOSNode node, CoreOsUnit coreOsUnit) throws MojoExecutionException {
+    void killService(CoreOSNode node, CoreOsUnit coreOsUnit) throws MojoExecutionException {
 
         log.info("killing service " + coreOsUnit.getFullName() + "...");
         try {
