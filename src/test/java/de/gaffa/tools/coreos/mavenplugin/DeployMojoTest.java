@@ -2,13 +2,11 @@ package de.gaffa.tools.coreos.mavenplugin;
 
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
 import junit.framework.TestCase;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -28,11 +26,7 @@ public class DeployMojoTest extends TestCase {
     @Mock
     private CoreOSNode node;
 
-    @Mock
-    private Log log;
-
-    @Spy
-    private DeployMojo deployMojo;
+    private DeployMojo deployMojo = new DeployMojo();
 
     @Before
     public void initMocks() throws Exception {
