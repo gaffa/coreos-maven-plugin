@@ -1,7 +1,5 @@
 package de.gaffa.tools.coreos.mavenplugin;
 
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
 import de.gaffa.tools.coreos.mavenplugin.type.Ensure;
 import de.gaffa.tools.coreos.mavenplugin.util.ServiceFileBuilder;
@@ -14,8 +12,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @Mojo(name = "deploy", defaultPhase = LifecyclePhase.DEPLOY)
@@ -67,7 +63,7 @@ public class DeployMojo extends AbstractMojo {
         // coreos-node we are operating on
         final CoreOSNode node = new CoreOSNode(nodeAdress, userName, keyFile, log);
 
-        final List<CoreOsUnit> oldServices = listUnits(node);
+        final List<CoreOsUnit> oldServices = node.listUnits(serviceName);
 
         if (ensure == Ensure.RUNNING && instances == oldServices.size()) {
             log.info("The right number of instances is already running. Nothing to do");
@@ -77,15 +73,13 @@ public class DeployMojo extends AbstractMojo {
         // generate service files
         final List<File> newServiceFiles = ServiceFileBuilder.build(instances, serviceName, dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass);
 
-        String serviceFileFolder = "/home/core/services/" + serviceName + "/";
-
-        clearServiceFilesFolder(node, serviceFileFolder);
-        copyServiceFilesToNodes(node, newServiceFiles, serviceFileFolder);
+        node.clearServiceFilesFolder(serviceName);
+        node.copyServiceFilesToNodes(newServiceFiles, serviceName);
 
         if (ensure == Ensure.RUNNING) {
-            ensureRunning(node, serviceFileFolder, newServiceFiles, oldServices);
+            ensureRunning(node, serviceName, newServiceFiles, oldServices);
         } else {
-            ensureLatest(node, serviceFileFolder, newServiceFiles, oldServices);
+            ensureLatest(node, serviceName, newServiceFiles, oldServices);
         }
 
         // FIXME perform smoke test (is there a sane way to do so? how to get the external ips?)
@@ -100,7 +94,7 @@ public class DeployMojo extends AbstractMojo {
 //        }
     }
 
-    void ensureRunning(CoreOSNode node, String serviceFileFolder, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
+    void ensureRunning(CoreOSNode node, String serviceName, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
 
         int numOldServices = oldServices.size();
         int numNewServices = newServiceFiles.size();
@@ -118,7 +112,7 @@ public class DeployMojo extends AbstractMojo {
             int diff = numNewServices - numOldServices;
 
             for (int i = 0; i < diff; i++) {
-                node.startService(serviceFileFolder, newServiceFiles.get(i).getName());
+                node.startService(serviceName, newServiceFiles.get(i).getName());
             }
         } else if (numNewServices < numOldServices) {
 
@@ -131,7 +125,7 @@ public class DeployMojo extends AbstractMojo {
         }
     }
 
-    private void ensureLatest(CoreOSNode node, String serviceFileFolder, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
+    private void ensureLatest(CoreOSNode node, String serviceName, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
 
         int numOldServices = oldServices.size();
         int numNewServices = newServiceFiles.size();
@@ -145,54 +139,8 @@ public class DeployMojo extends AbstractMojo {
             }
 
             if (numNewServices > i) {
-                node.startService(serviceFileFolder, newServiceFiles.get(i).getName());
+                node.startService(serviceName, newServiceFiles.get(i).getName());
             }
         }
-    }
-
-    private void clearServiceFilesFolder(CoreOSNode node, String serviceFileFolder) throws MojoExecutionException {
-
-        try {
-            log.info("clearing service folder");
-            // make sure the folders exist
-            node.execute("mkdir -p " + serviceFileFolder);
-            node.execute("rm -rf " + serviceFileFolder + "*");
-        } catch (JSchException | IOException e) {
-            throw new MojoExecutionException("Exception clearing service trash folder and moving service files", e);
-        }
-    }
-
-    private void copyServiceFilesToNodes(CoreOSNode node, List<File> newServiceFiles, String serviceFileFolder) throws MojoExecutionException {
-
-        try {
-            log.info("copying service files to node...");
-            for (File serviceFile : newServiceFiles) {
-                node.storeFile(serviceFile, serviceFileFolder, serviceFile.getName());
-            }
-        } catch (SftpException | JSchException | IOException e) {
-            throw new MojoExecutionException("Exception while trying to copy service file to CoreOS-Node", e);
-        }
-    }
-
-    private List<CoreOsUnit> listUnits(CoreOSNode node) throws MojoExecutionException {
-
-        final String listUnitsOuput;
-        try {
-            log.info("listing fleet units...");
-            // TODO: This lists all units, even if they are not running
-            listUnitsOuput = node.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service'");
-        } catch (JSchException | IOException e) {
-            throw new MojoExecutionException("Exception listing old units");
-        }
-
-        final List<CoreOsUnit> coreOsUnits = new ArrayList<>();
-        for (String listUnitsLine : listUnitsOuput.split("\\n")) {
-
-            if (!listUnitsLine.isEmpty()) {
-                coreOsUnits.add(CoreOsUnit.fromFleetListUnitsLine(listUnitsLine));
-            }
-        }
-
-        return coreOsUnits;
     }
 }
