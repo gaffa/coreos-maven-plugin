@@ -2,23 +2,23 @@
 <metadata modelVersion="1.1.0">
   <groupId>de.gaffa.tools.coreos</groupId>
   <artifactId>coreos-maven-plugin</artifactId>
-  <version>0.1.32-SNAPSHOT</version>
+  <version>0.1.33-SNAPSHOT</version>
   <versioning>
     <snapshot>
-      <timestamp>20141212.120253</timestamp>
+      <timestamp>20141212.120647</timestamp>
       <buildNumber>1</buildNumber>
     </snapshot>
-    <lastUpdated>20141212120253</lastUpdated>
+    <lastUpdated>20141212120647</lastUpdated>
     <snapshotVersions>
       <snapshotVersion>
         <extension>jar</extension>
-        <value>0.1.32-20141212.120253-1</value>
-        <updated>20141212120253</updated>
+        <value>0.1.33-20141212.120647-1</value>
+        <updated>20141212120647</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>0.1.32-20141212.120253-1</value>
-        <updated>20141212120253</updated>
+        <value>0.1.33-20141212.120647-1</value>
+        <updated>20141212120647</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
