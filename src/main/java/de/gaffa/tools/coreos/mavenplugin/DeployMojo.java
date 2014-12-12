@@ -56,7 +56,7 @@ public class DeployMojo extends AbstractMojo {
     @Parameter
     private String dockerHubPass;
 
-    @Parameter(defaultValue = "latest")
+    @Parameter(defaultValue = "LATEST")
     private Ensure ensure;
 
     @Override
