@@ -175,7 +175,7 @@ public class DeployMojo extends AbstractMojo {
         final String listUnitsOuput;
         try {
             // TODO: This lists all units, even if they are not running
-            listUnitsOuput = node.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service' | awk '{print $1}''");
+            listUnitsOuput = node.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service' | awk '{print $1}'");
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception listing old units");
         }
