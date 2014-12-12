@@ -136,11 +136,11 @@ public class DeployMojo extends AbstractMojo {
 
         for (int i = 0; i < maxCountServices; i++) {
 
-            if (numOldServices >= i) {
+            if (numOldServices > i) {
                 killService(node, oldServices.get(i));
             }
 
-            if (numNewServices >= i) {
+            if (numNewServices > i) {
                 startService(node, serviceFileFolder, newServiceFiles.get(i).getName());
             }
         }
