@@ -114,13 +114,13 @@ public class DeployMojo extends AbstractMojo {
         log.info("Ensuring that there will be " + numNewServices + " running (current: " + numOldServices + ")");
 
         if (numNewServices > numOldServices) {
-            int diff = numOldServices - numNewServices;
+            int diff = numNewServices - numOldServices;
 
             for (int i = 0; i < diff; i++) {
                 startService(node, serviceFileFolder, newServiceFiles.get(i).getName());
             }
         } else if (numNewServices < numOldServices) {
-            int diff = numNewServices - numOldServices;
+            int diff = numOldServices - numNewServices;
 
             // remove the highest index first, and the lowest last
             for (int i = numOldServices - 1; i >= diff; i--) {
