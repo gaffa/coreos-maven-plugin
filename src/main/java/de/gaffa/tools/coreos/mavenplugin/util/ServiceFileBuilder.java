@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ServiceFileBuilder {
 
-    private static File buildServiceFile(File baseDir, ServiceName serviceName, String dockerImageName, String dockerRunOptions, String xFleetOptions, String dockerHubUser, String dockerHubPass) throws IOException {
+    private static File buildServiceFile(int instances, File baseDir, ServiceName serviceName, String dockerImageName, String dockerRunOptions, String xFleetOptions, String dockerHubUser, String dockerHubPass) throws IOException {
 
         File serviceFile = new File(baseDir.getAbsolutePath() + File.separator + serviceName.getFullName());
 
@@ -38,12 +38,16 @@ public class ServiceFileBuilder {
         writer.println("WantedBy=multi-user.target");
         writer.println();
         writer.println("[X-Fleet]");
+
         // custom x-fleet options (eg an explicit host to deploy to, deploy to all hosts)
         if (!StringUtils.isBlank(xFleetOptions)) {
             writer.println(xFleetOptions);
         }
-        // never run two instances of the service on the same host
-        writer.println("Conflicts=" + serviceName.getName() + ".*.service");
+
+        if (instances > 1) {
+            // never run two instances of the service on the same host
+            writer.println("Conflicts=" + serviceName.getName() + ".*.service");
+        }
         writer.close();
 
         return serviceFile;
@@ -55,7 +59,7 @@ public class ServiceFileBuilder {
         List<File> serviceFiles = new ArrayList<>();
         for (int i = 0; i < instances; i++) {
             try {
-                serviceFiles.add(buildServiceFile(baseDir, new ServiceName(serviceName, i + 1), dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass));
+                serviceFiles.add(buildServiceFile(instances, baseDir, new ServiceName(serviceName, i + 1), dockerImageName, dockerRunOptions, xFleetOptions, dockerHubUser, dockerHubPass));
             } catch (IOException e) {
                 throw new MojoExecutionException("Exception generating service file", e);
             }
