@@ -63,6 +63,7 @@ public class DeployMojo extends AbstractMojo {
         // coreos-node we are operating on
         final CoreOSNode node = new CoreOSNode(nodeAdress, userName, keyFile, log);
 
+        log.info("listing fleet units...");
         final List<CoreOsUnit> oldServices = node.listUnits(serviceName);
 
         if (ensure == Ensure.RUNNING && instances == oldServices.size()) {

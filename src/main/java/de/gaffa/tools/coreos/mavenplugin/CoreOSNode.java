@@ -46,10 +46,11 @@ public class CoreOSNode {
 
     private void waitForService(String serviceName, String serviceFilename) throws MojoExecutionException {
 
-        int repeat = 0;
-        while (repeat < 120) {
+        int repetition = 0;
+        int repetitions = 120;
+        while (repetition < repetitions) {
 
-            log.info("waiting for service to start...");
+            log.info("waiting for service to start (" + repetition + "/" + repetitions + ")...");
             final List<CoreOsUnit> coreOsUnits = listUnits(serviceName);
             for (CoreOsUnit unit : coreOsUnits) {
                 if (serviceFilename.equals(unit.getFullName()) && unit.isStateRunning()) {
@@ -58,7 +59,7 @@ public class CoreOSNode {
                 }
             }
             ThreadUtil.sleep(1000);
-            repeat++;
+            repetition++;
         }
         log.warn("service did not start successfully.");
         throw new MojoExecutionException("service did not start successfully.");
@@ -79,7 +80,6 @@ public class CoreOSNode {
 
         final String listUnitsOuput;
         try {
-            log.info("listing fleet units...");
             // TODO: This lists all units, even if they are not running
             listUnitsOuput = remoteHost.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service'");
         } catch (JSchException | IOException e) {
