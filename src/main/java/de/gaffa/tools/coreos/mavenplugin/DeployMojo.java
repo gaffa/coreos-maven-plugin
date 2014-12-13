@@ -43,7 +43,7 @@ public class DeployMojo extends AbstractMojo {
     @Parameter
     private String xFleetOptions;
 
-    @Parameter(defaultValue = "true")
+    @Parameter(defaultValue = "false")
     private Boolean executeSmokeTest;
 
     @Parameter
@@ -111,7 +111,7 @@ public class DeployMojo extends AbstractMojo {
         if (numNewServices > numOldServices) {
 
             for (int i = numOldServices; i < numNewServices; i++) {
-                node.startService(serviceName, newServiceFiles.get(i).getName());
+                node.startService(serviceName, newServiceFiles.get(i).getName(), executeSmokeTest);
             }
         } else if (numNewServices < numOldServices) {
 
@@ -136,7 +136,7 @@ public class DeployMojo extends AbstractMojo {
             }
 
             if (numNewServices > i) {
-                node.startService(serviceName, newServiceFiles.get(i).getName());
+                node.startService(serviceName, newServiceFiles.get(i).getName(), executeSmokeTest);
             }
         }
     }
