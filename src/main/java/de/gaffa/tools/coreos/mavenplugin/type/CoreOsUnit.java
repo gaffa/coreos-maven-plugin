@@ -10,15 +10,17 @@ public class CoreOsUnit {
     private final String name;
     private final int index;
     private final String subState;
+    private final String ip;
 
     public CoreOsUnit(String name, int index) {
-        this(name, index, null);
+        this(name, index, null, null);
     }
 
-    public CoreOsUnit(String name, int index, String subState) {
+    public CoreOsUnit(String name, int index, String subState, String ip) {
         this.name = name;
         this.index = index;
         this.subState = subState;
+        this.ip = ip;
     }
 
     public static CoreOsUnit fromFleetListUnitsLine(String listUnitsLine) {
@@ -29,6 +31,8 @@ public class CoreOsUnit {
         }
 
         String fullName = listUnitsColumns[0];
+        String machine = listUnitsColumns[1];
+        String ip = machine.substring(machine.indexOf("/") + 1);
         String subState = listUnitsColumns[3];
 
         Matcher matcher = UNIT_NAME_PATTERN.matcher(fullName);
@@ -39,7 +43,7 @@ public class CoreOsUnit {
         String serviceName = matcher.group(1);
         int index = Integer.parseInt(matcher.group(2));
 
-        return new CoreOsUnit(serviceName, index, subState);
+        return new CoreOsUnit(serviceName, index, subState, ip);
     }
 
     public String getName() {
@@ -48,6 +52,10 @@ public class CoreOsUnit {
 
     public int getIndex() {
         return index;
+    }
+
+    public String getIp() {
+        return ip;
     }
 
     public String getFullName() {

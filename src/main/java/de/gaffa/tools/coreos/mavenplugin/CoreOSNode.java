@@ -53,9 +53,14 @@ public class CoreOSNode {
             log.info("waiting for service to start (" + repetition + "/" + repetitions + ")...");
             final List<CoreOsUnit> coreOsUnits = listUnits(serviceName);
             for (CoreOsUnit unit : coreOsUnits) {
-                if (serviceFilename.equals(unit.getFullName()) && unit.isStateRunning()) {
-                    log.info("service is running.");
-                    return;
+                if (serviceFilename.equals(unit.getFullName()) && unit.isStateRunning()) try {
+                    {
+                        log.info("service is running.");
+                        // TODO: smoketest (remoteHost.execute(curl unit.getIp()/path until 200)
+                        return;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
             ThreadUtil.sleep(1000);
@@ -80,7 +85,6 @@ public class CoreOSNode {
 
         final String listUnitsOuput;
         try {
-            // TODO: This lists all units, even if they are not running
             listUnitsOuput = remoteHost.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service'");
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception listing old units", e);

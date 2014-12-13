@@ -14,6 +14,7 @@ public class CoreOsUnitTest {
 
         assertEquals("foo-bar", coreOsUnit.getName());
         assertEquals(1, coreOsUnit.getIndex());
+        assertEquals("172.31.46.89", coreOsUnit.getIp());
         assertTrue(coreOsUnit.isStateRunning());
         assertFalse(coreOsUnit.isStateFailed());
     }
@@ -24,6 +25,7 @@ public class CoreOsUnitTest {
 
         assertEquals("foo-bar", coreOsUnit.getName());
         assertEquals(12, coreOsUnit.getIndex());
+        assertEquals("172.31.46.89", coreOsUnit.getIp());
         assertTrue(coreOsUnit.isStateRunning());
         assertFalse(coreOsUnit.isStateFailed());
     }
@@ -34,6 +36,7 @@ public class CoreOsUnitTest {
 
         assertEquals("foo-bar", coreOsUnit.getName());
         assertEquals(1, coreOsUnit.getIndex());
+        assertEquals("172.31.46.89", coreOsUnit.getIp());
         assertFalse(coreOsUnit.isStateRunning());
         assertTrue(coreOsUnit.isStateFailed());
     }
