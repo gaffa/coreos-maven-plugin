@@ -53,14 +53,10 @@ public class CoreOSNode {
             log.info("waiting for service to start (" + repetition + "/" + repetitions + ")...");
             final List<CoreOsUnit> coreOsUnits = listUnits(serviceName);
             for (CoreOsUnit unit : coreOsUnits) {
-                if (serviceFilename.equals(unit.getFullName()) && unit.isStateRunning()) try {
-                    {
-                        log.info("service is running.");
-                        // TODO: smoketest (remoteHost.execute(curl unit.getIp()/path until 200)
-                        return;
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (serviceFilename.equals(unit.getFullName()) && unit.isStateRunning()) {
+                    log.info("service is running.");
+                    // TODO: smoketest (remoteHost.execute(curl unit.getIp()/path until 200)
+                    return;
                 }
             }
             ThreadUtil.sleep(1000);
