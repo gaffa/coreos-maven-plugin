@@ -22,6 +22,7 @@ public class CoreOsUnit {
     }
 
     public static CoreOsUnit fromFleetListUnitsLine(String listUnitsLine) {
+
         String[] listUnitsColumns = listUnitsLine.split("\\s+");
         if (listUnitsColumns.length < 4) {
             throw new IllegalArgumentException("Expected an output with at least 4 columns but was [" + listUnitsLine + "]");

@@ -42,8 +42,8 @@ public class SmokeTester {
                     return true;
                 }
                 log.info("invalid status code: " + statusCode + " (expecting 200).");
-                Thread.sleep(1000);
-            } catch (IOException | InterruptedException e) {
+                ThreadUtil.sleep(1000);
+            } catch (IOException e) {
                 log.warn("problem connecting to service: " + e.getMessage());
             }
             // wait until a second is over

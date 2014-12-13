@@ -3,6 +3,7 @@ package de.gaffa.tools.coreos.mavenplugin;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
+import de.gaffa.tools.coreos.mavenplugin.util.ThreadUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
@@ -40,7 +41,27 @@ public class CoreOSNode {
             throw new MojoExecutionException("Exception starting service", e);
         }
 
-        // TODO wait until the service is actually started as fleetctl start returns quickly, the webapp takes some time to be available
+        waitForService(serviceName, serviceFilename);
+    }
+
+    private void waitForService(String serviceName, String serviceFilename) throws MojoExecutionException {
+
+        int repeat = 0;
+        while (repeat < 120) {
+
+            log.info("waiting for service to start...");
+            final List<CoreOsUnit> coreOsUnits = listUnits(serviceName);
+            for (CoreOsUnit unit : coreOsUnits) {
+                if (serviceFilename.equals(unit.getFullName()) && unit.isStateRunning()) {
+                    log.info("service is running.");
+                    return;
+                }
+            }
+            ThreadUtil.sleep(1000);
+            repeat++;
+        }
+        log.warn("service did not start successfully.");
+        throw new MojoExecutionException("service did not start successfully.");
     }
 
     public void killService(CoreOsUnit coreOsUnit) throws MojoExecutionException {
