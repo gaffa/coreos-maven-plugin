@@ -32,7 +32,7 @@ public class CoreOSNode {
         this.log = log;
     }
 
-    public void startService(String serviceName, String serviceFilename, boolean smokeTest) throws MojoExecutionException {
+    public void startService(String serviceName, String serviceFilename, boolean checkAvailability) throws MojoExecutionException {
 
         log.info("starting service " + serviceFilename + "...");
         try {
@@ -41,10 +41,10 @@ public class CoreOSNode {
             throw new MojoExecutionException("Exception starting service", e);
         }
 
-        waitForService(serviceName, serviceFilename, smokeTest);
+        waitForService(serviceName, serviceFilename, checkAvailability);
     }
 
-    private void waitForService(String serviceName, String serviceFilename, boolean smokeTest) throws MojoExecutionException {
+    private void waitForService(String serviceName, String serviceFilename, boolean checkAvailability) throws MojoExecutionException {
 
         int repetition = 0;
         int repetitions = 120;
@@ -56,11 +56,11 @@ public class CoreOSNode {
             for (CoreOsUnit unit : coreOsUnits) {
                 if (serviceFilename.equals(unit.getFullName()) && unit.isStateRunning()) {
                     log.info("service is running.");
-                    if (smokeTest) {
+                    if (checkAvailability) {
                         log.info("waiting for service availability...");
-                        int smoke_repetition = 0;
-                        int smoke_repetitions = 120;
-                        while (smoke_repetition < smoke_repetitions) {
+                        int availability_check_repetition = 0;
+                        int availability_check_repetitions = 120;
+                        while (availability_check_repetition < availability_check_repetitions) {
                             try {
                                 if (remoteHost.execute("curl -I " + unit.getIp()).contains("200")) {
                                     log.info("service availabilty check ok.");
@@ -69,7 +69,7 @@ public class CoreOSNode {
                             } catch (JSchException | IOException ignored) {
                             }
                             ThreadUtil.sleep(1000);
-                            smoke_repetition++;
+                            availability_check_repetition++;
                         }
                     }
                     return;

@@ -43,6 +43,11 @@ public class DeployMojo extends AbstractMojo {
     @Parameter
     private String xFleetOptions;
 
+    // maybe make this an object with { path = "/context-path/path", responseStatus = 200 }
+    @Parameter(defaultValue = "false")
+    private Boolean checkAvailability;
+
+    // maybe make this an object with { path = "/context-path/path", responseStatus = 200 }
     @Parameter(defaultValue = "false")
     private Boolean executeSmokeTest;
 
@@ -111,7 +116,7 @@ public class DeployMojo extends AbstractMojo {
         if (numNewServices > numOldServices) {
 
             for (int i = numOldServices; i < numNewServices; i++) {
-                node.startService(serviceName, newServiceFiles.get(i).getName(), executeSmokeTest);
+                node.startService(serviceName, newServiceFiles.get(i).getName(), checkAvailability);
             }
         } else if (numNewServices < numOldServices) {
 
@@ -136,7 +141,7 @@ public class DeployMojo extends AbstractMojo {
             }
 
             if (numNewServices > i) {
-                node.startService(serviceName, newServiceFiles.get(i).getName(), executeSmokeTest);
+                node.startService(serviceName, newServiceFiles.get(i).getName(), checkAvailability);
             }
         }
     }
