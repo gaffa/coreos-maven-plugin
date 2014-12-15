@@ -139,7 +139,7 @@ public class CoreOSNode {
         return null;
     }
 
-    private boolean checkAvailability(AvailabilityCheck availabilityCheck, CoreOsUnit unit) {
+    private void checkAvailability(AvailabilityCheck availabilityCheck, CoreOsUnit unit) throws MojoExecutionException {
         log.info("waiting for service availability...");
         int repetition = 0;
         int repetitions = 120;
@@ -153,13 +153,14 @@ public class CoreOSNode {
             String expectedCode = Integer.toString(availabilityCheck.getExpectedStatusCode());
             if (expectedCode.equals(statusCode)) {
                 log.info("service availabilty check ok.");
-                return true;
+                return;
             }
 
             ThreadUtil.sleep(1000);
             repetition++;
         }
-        return false;
+
+        throw new MojoExecutionException("service availability check failed.");
     }
 
     private String getServiceStatus(String url) {
