@@ -57,7 +57,7 @@ public class CoreOSNode {
             CoreOsUnit unit = findByFullName(coreOsUnits, serviceFilename);
             if (unit != null && unit.isStateRunning()) {
                 log.info("service is running.");
-                if (availabilityCheck != null) {
+                if (availabilityCheck != null && availabilityCheck.isEnabled()) {
                     checkAvailability(availabilityCheck, unit);
                 }
                 return;

@@ -4,6 +4,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 public class AvailabilityCheck {
 
+    @Parameter(defaultValue = "false")
+    private boolean enabled;
+
     @Parameter(defaultValue = "/")
     private String contextPath;
 
@@ -12,6 +15,10 @@ public class AvailabilityCheck {
 
     @Parameter(defaultValue = "200")
     private int expectedStatusCode;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
 
     public String getContextPath() {
         return contextPath;
