@@ -13,6 +13,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 public class RemoteHost {
@@ -48,11 +50,15 @@ public class RemoteHost {
         return session;
     }
 
+    public String execute(String command) throws JSchException, IOException {
+        return execute(command, Arrays.asList(0));
+    }
+
     /**
      * @param command will be executed on the node
      * @throws JSchException
      */
-    public String execute(String command) throws JSchException, IOException {
+    public String execute(String command, List<Integer> validExitCodes) throws JSchException, IOException {
 
         final Session session = getSession();
         final ChannelExec channel = (ChannelExec) session.openChannel("exec");
@@ -71,7 +77,7 @@ public class RemoteHost {
         session.disconnect();
 
         final int exitCode = channel.getExitStatus();
-        if (channel.getExitStatus() != 0) {
+        if (!validExitCodes.contains(channel.getExitStatus())) {
             final String message = "error executing command: " + command + ". process exit code: " + exitCode + ". error stream: " + IOUtils.toString(errorStream);
             log.error(message);
             throw new JSchException(message);

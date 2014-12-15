@@ -11,6 +11,7 @@ import org.apache.maven.plugin.logging.Log;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -83,9 +84,12 @@ public class CoreOSNode {
 
     public List<CoreOsUnit> listUnits(String serviceName) throws MojoExecutionException {
 
+        // egrep produces the status code 0 on match and 1 on no match, both should not lead to an error
+        List<Integer> validExitCodes = Arrays.asList(0, 1);
+
         final String listUnitsOuput;
         try {
-            listUnitsOuput = remoteHost.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service'");
+            listUnitsOuput = remoteHost.execute("fleetctl list-units | egrep '^" + serviceName + "\\.[0-9]+\\.service'", validExitCodes);
         } catch (JSchException | IOException e) {
             throw new MojoExecutionException("Exception listing old units", e);
         }
@@ -159,8 +163,12 @@ public class CoreOSNode {
     }
 
     private String getServiceStatus(String url) {
+        // curl produces an exit code 0 on success, and 7 on "Failed to connect() to host or proxy"
+        // both should not lead to an exception
+        List<Integer> validExitCodes = Arrays.asList(0, 7);
+
         try {
-            return remoteHost.execute("curl --silent --output /dev/null --write-out \"%{http_code}\" " + url);
+            return remoteHost.execute("curl --silent --output /dev/null --write-out \"%{http_code}\" " + url, validExitCodes);
         } catch (JSchException | IOException ignored) {
             return null;
         }
