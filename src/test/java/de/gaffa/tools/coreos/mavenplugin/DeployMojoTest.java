@@ -1,7 +1,6 @@
 package de.gaffa.tools.coreos.mavenplugin;
 
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
-import junit.framework.TestCase;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,12 +15,13 @@ import java.util.List;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 
 @RunWith(MockitoJUnitRunner.class)
-public class DeployMojoTest extends TestCase {
+public class DeployMojoTest {
 
     @Mock
     private CoreOSNode node;
@@ -31,6 +31,7 @@ public class DeployMojoTest extends TestCase {
     @Before
     public void initMocks() throws Exception {
         ReflectionTestUtils.setField(deployMojo, "log", new SystemStreamLog());
+        ReflectionTestUtils.setField(deployMojo, "checkAvailability", false);
     }
 
     @Test
@@ -38,7 +39,7 @@ public class DeployMojoTest extends TestCase {
 
         deployMojo.ensureRunning(node, "some/folder", fileList(1), serviceList(3));
         verify(node, times(2)).killService(any(CoreOsUnit.class));
-        verify(node, times(0)).startService(anyString(), anyString());
+        verify(node, times(0)).startService(anyString(), anyString(), eq(false));
     }
 
     @Test
@@ -46,7 +47,7 @@ public class DeployMojoTest extends TestCase {
 
         deployMojo.ensureRunning(node, "some/folder", fileList(3), serviceList(1));
         verify(node, times(0)).killService(any(CoreOsUnit.class));
-        verify(node, times(2)).startService(anyString(), anyString());
+        verify(node, times(2)).startService(anyString(), anyString(), eq(false));
     }
 
     @Test
@@ -54,7 +55,7 @@ public class DeployMojoTest extends TestCase {
 
         deployMojo.ensureRunning(node, "some/folder", fileList(2), serviceList(2));
         verify(node, times(0)).killService(any(CoreOsUnit.class));
-        verify(node, times(0)).startService(anyString(), anyString());
+        verify(node, times(0)).startService(anyString(), anyString(), eq(false));
     }
 
     @Test
@@ -62,7 +63,7 @@ public class DeployMojoTest extends TestCase {
 
         deployMojo.ensureRunning(node, "some/folder", fileList(2), serviceList(0));
         verify(node, times(0)).killService(any(CoreOsUnit.class));
-        verify(node, times(2)).startService(anyString(), anyString());
+        verify(node, times(2)).startService(anyString(), anyString(), eq(false));
     }
 
     @Test
@@ -70,7 +71,7 @@ public class DeployMojoTest extends TestCase {
 
         deployMojo.ensureRunning(node, "some/folder", fileList(0), serviceList(5));
         verify(node, times(5)).killService(any(CoreOsUnit.class));
-        verify(node, times(0)).startService(anyString(), anyString());
+        verify(node, times(0)).startService(anyString(), anyString(), eq(false));
     }
 
     private List<CoreOsUnit> serviceList(int num) {
