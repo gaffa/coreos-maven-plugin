@@ -52,30 +52,16 @@ public class CoreOSNode {
 
             log.info("waiting for service to start (" + repetition + "/" + repetitions + ")...");
             final List<CoreOsUnit> coreOsUnits = listUnits(serviceName);
-            // TODO: cleanup/refactor
-            for (CoreOsUnit unit : coreOsUnits) {
-                if (serviceFilename.equals(unit.getFullName()) && unit.isStateRunning()) {
-                    log.info("service is running.");
-                    if (checkAvailability) {
-                        log.info("waiting for service availability...");
-                        int availability_check_repetition = 0;
-                        int availability_check_repetitions = 120;
-                        while (availability_check_repetition < availability_check_repetitions) {
-                            try {
-                                String statusCode = remoteHost.execute("curl --silent --output /dev/null --write-out \"%{http_code}\" " + unit.getIp());
-                                if ("200".equals(statusCode)) {
-                                    log.info("service availabilty check ok.");
-                                    return;
-                                }
-                            } catch (JSchException | IOException ignored) {
-                            }
-                            ThreadUtil.sleep(1000);
-                            availability_check_repetition++;
-                        }
-                    }
-                    return;
+
+            CoreOsUnit unit = findByFullName(coreOsUnits, serviceFilename);
+            if (unit != null && unit.isStateRunning()) {
+                log.info("service is running.");
+                if (checkAvailability) {
+                    checkAvailability(unit);
                 }
+                return;
             }
+
             ThreadUtil.sleep(1000);
             repetition++;
         }
@@ -135,6 +121,44 @@ public class CoreOSNode {
             }
         } catch (SftpException | JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to copy service file to CoreOS-Node", e);
+        }
+    }
+
+    private static CoreOsUnit findByFullName(List<CoreOsUnit> coreOsUnits, String serviceFilename) {
+        for (CoreOsUnit unit : coreOsUnits) {
+            if (serviceFilename.equals(unit.getFullName())) {
+                return unit;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean checkAvailability(CoreOsUnit unit) {
+        log.info("waiting for service availability...");
+        int repetition = 0;
+        int repetitions = 120;
+        while (repetition < repetitions) {
+            String statusCode = getServiceStatus("http://" + unit.getIp());
+
+            log.info("Availability check against " + unit.getIp() + " resulted in HTTP " + statusCode + " (" + repetition + "/" + repetitions + ")");
+
+            if ("200".equals(statusCode)) {
+                log.info("service availabilty check ok.");
+                return true;
+            }
+
+            ThreadUtil.sleep(1000);
+            repetition++;
+        }
+        return false;
+    }
+
+    private String getServiceStatus(String url) {
+        try {
+            return remoteHost.execute("curl --silent --output /dev/null --write-out \"%{http_code}\" " + url);
+        } catch (JSchException | IOException ignored) {
+            return null;
         }
     }
 
