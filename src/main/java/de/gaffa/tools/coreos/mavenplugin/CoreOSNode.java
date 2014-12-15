@@ -62,7 +62,8 @@ public class CoreOSNode {
                         int availability_check_repetitions = 120;
                         while (availability_check_repetition < availability_check_repetitions) {
                             try {
-                                if (remoteHost.execute("curl -I " + unit.getIp()).contains("200")) {
+                                String statusCode = remoteHost.execute("curl --silent --output /dev/null --write-out \"%{http_code}\" " + unit.getIp());
+                                if ("200".equals(statusCode)) {
                                     log.info("service availabilty check ok.");
                                     return;
                                 }
