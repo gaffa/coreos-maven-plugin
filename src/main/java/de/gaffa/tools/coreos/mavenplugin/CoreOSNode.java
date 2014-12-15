@@ -2,6 +2,7 @@ package de.gaffa.tools.coreos.mavenplugin;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
+import de.gaffa.tools.coreos.mavenplugin.type.AvailabilityCheck;
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
 import de.gaffa.tools.coreos.mavenplugin.util.ThreadUtil;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -32,7 +33,7 @@ public class CoreOSNode {
         this.log = log;
     }
 
-    public void startService(String serviceName, String serviceFilename, boolean checkAvailability) throws MojoExecutionException {
+    public void startService(String serviceName, String serviceFilename, AvailabilityCheck availabilityCheck) throws MojoExecutionException {
 
         log.info("starting service " + serviceFilename + "...");
         try {
@@ -41,10 +42,10 @@ public class CoreOSNode {
             throw new MojoExecutionException("Exception starting service", e);
         }
 
-        waitForService(serviceName, serviceFilename, checkAvailability);
+        waitForService(serviceName, serviceFilename, availabilityCheck);
     }
 
-    private void waitForService(String serviceName, String serviceFilename, boolean checkAvailability) throws MojoExecutionException {
+    private void waitForService(String serviceName, String serviceFilename, AvailabilityCheck availabilityCheck) throws MojoExecutionException {
 
         int repetition = 0;
         int repetitions = 120;
@@ -56,8 +57,8 @@ public class CoreOSNode {
             CoreOsUnit unit = findByFullName(coreOsUnits, serviceFilename);
             if (unit != null && unit.isStateRunning()) {
                 log.info("service is running.");
-                if (checkAvailability) {
-                    checkAvailability(unit);
+                if (availabilityCheck != null) {
+                    checkAvailability(availabilityCheck, unit);
                 }
                 return;
             }
@@ -134,16 +135,19 @@ public class CoreOSNode {
         return null;
     }
 
-    private boolean checkAvailability(CoreOsUnit unit) {
+    private boolean checkAvailability(AvailabilityCheck availabilityCheck, CoreOsUnit unit) {
         log.info("waiting for service availability...");
         int repetition = 0;
         int repetitions = 120;
         while (repetition < repetitions) {
-            String statusCode = getServiceStatus("http://" + unit.getIp());
+            String url = "http://" + unit.getIp() + ":" + availabilityCheck.getPort() + availabilityCheck.getContextPath();
+            String statusCode = getServiceStatus(url);
 
-            log.info("Availability check against " + unit.getIp() + " resulted in HTTP " + statusCode + " (" + repetition + "/" + repetitions + ")");
+            log.info("Availability check against " + url + " resulted in HTTP " + statusCode
+                    + ", expected: " + availabilityCheck.getExpectedStatusCode() + " (" + repetition + "/" + repetitions + ")");
 
-            if ("200".equals(statusCode)) {
+            String expectedCode = Integer.toString(availabilityCheck.getExpectedStatusCode());
+            if (expectedCode.equals(statusCode)) {
                 log.info("service availabilty check ok.");
                 return true;
             }

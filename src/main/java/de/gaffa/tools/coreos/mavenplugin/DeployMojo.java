@@ -1,5 +1,6 @@
 package de.gaffa.tools.coreos.mavenplugin;
 
+import de.gaffa.tools.coreos.mavenplugin.type.AvailabilityCheck;
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
 import de.gaffa.tools.coreos.mavenplugin.type.Ensure;
 import de.gaffa.tools.coreos.mavenplugin.util.ServiceFileBuilder;
@@ -43,9 +44,8 @@ public class DeployMojo extends AbstractMojo {
     @Parameter
     private String xFleetOptions;
 
-    // maybe make this an object with { path = "/context-path/path", responseStatus = 200 }
-    @Parameter(defaultValue = "false")
-    private Boolean checkAvailability;
+    @Parameter
+    private AvailabilityCheck availabilityCheck;
 
     // maybe make this an object with { path = "/context-path/path", responseStatus = 200 }
     @Parameter(defaultValue = "false")
@@ -116,7 +116,7 @@ public class DeployMojo extends AbstractMojo {
         if (numNewServices > numOldServices) {
 
             for (int i = numOldServices; i < numNewServices; i++) {
-                node.startService(serviceName, newServiceFiles.get(i).getName(), checkAvailability);
+                node.startService(serviceName, newServiceFiles.get(i).getName(), availabilityCheck);
             }
         } else if (numNewServices < numOldServices) {
 
@@ -141,7 +141,7 @@ public class DeployMojo extends AbstractMojo {
             }
 
             if (numNewServices > i) {
-                node.startService(serviceName, newServiceFiles.get(i).getName(), checkAvailability);
+                node.startService(serviceName, newServiceFiles.get(i).getName(), availabilityCheck);
             }
         }
     }
