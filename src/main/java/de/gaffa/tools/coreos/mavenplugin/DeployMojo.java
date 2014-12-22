@@ -3,6 +3,7 @@ package de.gaffa.tools.coreos.mavenplugin;
 import de.gaffa.tools.coreos.mavenplugin.type.AvailabilityCheck;
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
 import de.gaffa.tools.coreos.mavenplugin.type.Ensure;
+import de.gaffa.tools.coreos.mavenplugin.util.CoreOsUnitSearches;
 import de.gaffa.tools.coreos.mavenplugin.util.ServiceFileBuilder;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -70,8 +71,9 @@ public class DeployMojo extends AbstractMojo {
 
         log.info("listing fleet units...");
         final List<CoreOsUnit> oldServices = node.listUnits(serviceName);
+        final List<CoreOsUnit> runningServices = CoreOsUnitSearches.findRunning(oldServices);
 
-        if (ensure == Ensure.RUNNING && instances == oldServices.size()) {
+        if (ensure == Ensure.RUNNING && instances == runningServices.size()) {
             log.info("The right number of instances is already running. Nothing to do");
             return;
         }
@@ -83,7 +85,7 @@ public class DeployMojo extends AbstractMojo {
         node.copyServiceFilesToNodes(newServiceFiles, serviceName);
 
         if (ensure == Ensure.RUNNING) {
-            ensureRunning(node, serviceName, newServiceFiles, oldServices);
+            ensureRunning(node, serviceName, newServiceFiles, runningServices);
         } else {
             ensureLatest(node, serviceName, newServiceFiles, oldServices);
         }
@@ -100,29 +102,29 @@ public class DeployMojo extends AbstractMojo {
 //        }
     }
 
-    void ensureRunning(CoreOSNode node, String serviceName, List<File> newServiceFiles, List<CoreOsUnit> oldServices) throws MojoExecutionException {
+    void ensureRunning(CoreOSNode node, String serviceName, List<File> newServiceFiles, List<CoreOsUnit> runningServices) throws MojoExecutionException {
 
-        int numOldServices = oldServices.size();
+        int numRunningServices = runningServices.size();
         int numNewServices = newServiceFiles.size();
 
         // TODO: when starting new services, the existing service indexes must be considered
 //        List<Integer> oldServiceIndexes = new ArrayList<>();
-//        for (ServiceName oldService : oldServices) {
+//        for (ServiceName oldService : runningServices) {
 //            oldServiceIndexes.add(oldService.getIndex());
 //        }
 
-        log.info("Ensuring that there will be " + numNewServices + " running (current: " + numOldServices + ")");
+        log.info("Ensuring that there will be " + numNewServices + " running (current: " + numRunningServices + ")");
 
-        if (numNewServices > numOldServices) {
+        if (numNewServices > numRunningServices) {
 
-            for (int i = numOldServices; i < numNewServices; i++) {
+            for (int i = numRunningServices; i < numNewServices; i++) {
                 node.startService(serviceName, newServiceFiles.get(i).getName(), availabilityCheck);
             }
-        } else if (numNewServices < numOldServices) {
+        } else if (numNewServices < numRunningServices) {
 
             // remove the highest index first, and the lowest last
-            for (int i = numOldServices - 1; i >= numNewServices; i--) {
-                node.killService(oldServices.get(i));
+            for (int i = numRunningServices - 1; i >= numNewServices; i--) {
+                node.killService(runningServices.get(i));
             }
         }
     }

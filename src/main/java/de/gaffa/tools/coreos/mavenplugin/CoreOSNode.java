@@ -4,6 +4,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import de.gaffa.tools.coreos.mavenplugin.type.AvailabilityCheck;
 import de.gaffa.tools.coreos.mavenplugin.type.CoreOsUnit;
+import de.gaffa.tools.coreos.mavenplugin.util.CoreOsUnitSearches;
 import de.gaffa.tools.coreos.mavenplugin.util.ThreadUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -55,7 +56,7 @@ public class CoreOSNode {
             log.info("waiting for service to start (" + repetition + "/" + repetitions + ")...");
             final List<CoreOsUnit> coreOsUnits = listUnits(serviceName);
 
-            CoreOsUnit unit = findByFullName(coreOsUnits, serviceFilename);
+            CoreOsUnit unit = CoreOsUnitSearches.findByFullName(coreOsUnits, serviceFilename);
             if (unit != null && unit.isStateRunning()) {
                 log.info("service is running.");
                 if (availabilityCheck != null && availabilityCheck.isEnabled()) {
@@ -127,16 +128,6 @@ public class CoreOSNode {
         } catch (SftpException | JSchException | IOException e) {
             throw new MojoExecutionException("Exception while trying to copy service file to CoreOS-Node", e);
         }
-    }
-
-    private static CoreOsUnit findByFullName(List<CoreOsUnit> coreOsUnits, String serviceFilename) {
-        for (CoreOsUnit unit : coreOsUnits) {
-            if (serviceFilename.equals(unit.getFullName())) {
-                return unit;
-            }
-        }
-
-        return null;
     }
 
     private void checkAvailability(AvailabilityCheck availabilityCheck, CoreOsUnit unit) throws MojoExecutionException {
