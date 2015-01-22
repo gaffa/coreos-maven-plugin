@@ -131,6 +131,7 @@ public class CoreOSNode {
     }
 
     private void checkAvailability(AvailabilityCheck availabilityCheck, CoreOsUnit unit) throws MojoExecutionException {
+
         log.info("waiting for service availability...");
         int repetition = 0;
         int repetitions = 120;
@@ -160,7 +161,8 @@ public class CoreOSNode {
         List<Integer> validExitCodes = Arrays.asList(0, 7);
 
         try {
-            return remoteHost.execute("curl --silent --output /dev/null --write-out \"%{http_code}\" " + url, validExitCodes);
+            // TODO: the header-stuff is proprietary for aws and should not be hard coded
+            return remoteHost.execute("curl -H 'X-FORWARDED-PROTO: HTTPS' --silent --output /dev/null --write-out \"%{http_code}\" " + url, validExitCodes);
         } catch (JSchException | IOException ignored) {
             return null;
         }
