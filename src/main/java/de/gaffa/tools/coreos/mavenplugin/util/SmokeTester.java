@@ -35,6 +35,8 @@ public class SmokeTester {
             try {
                 log.info("trying to connect to deployed service...");
                 final HttpGet get = new HttpGet(url);
+                // TODO: this is proprietary for aws and should not be hard coded
+                get.addHeader("X-FORWARDED-PROTO", "HTTPS");
                 final CloseableHttpResponse response = httpClient.execute(get);
                 final int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == 200) {
