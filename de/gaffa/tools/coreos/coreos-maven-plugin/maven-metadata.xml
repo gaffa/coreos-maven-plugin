@@ -3,11 +3,11 @@
   <groupId>de.gaffa.tools.coreos</groupId>
   <artifactId>coreos-maven-plugin</artifactId>
   <versioning>
-    <latest>0.1.46</latest>
-    <release>0.1.46</release>
+    <latest>0.1.47</latest>
+    <release>0.1.47</release>
     <versions>
-      <version>0.1.46</version>
+      <version>0.1.47</version>
     </versions>
-    <lastUpdated>20141222114759</lastUpdated>
+    <lastUpdated>20150122171747</lastUpdated>
   </versioning>
 </metadata>
