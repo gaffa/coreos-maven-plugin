@@ -1,3 +1,8 @@
+You do not want to use this. 
+This was implemented at a time when Kubernetes was not ready.
+
+This is used to deploy to coreOS (the underlying operating system of kubernnetes) directly through maven.
+
 coreos-maven-plugin
 ===================
 
